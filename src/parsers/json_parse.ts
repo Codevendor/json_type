@@ -12,7 +12,7 @@ export function json_parse(text: string): json_type {
     // Checks if string is a bigint
     const is_bigint = function (src: string): boolean {
 
-        return /^[-]{0,1}[0-9]+[n]{1}|[-]{0,1}[1-9]{1}[0-9]{16,}|[-]{0,1}900719925474099[2-9]$/.test(src);
+        return /^[-+]{0,1}[0-9]+[n]{1}|[-+]{0,1}[1-9]{1}[0-9]{16,}|[-+]{0,1}900719925474099[2-9]$/.test(src);
 
     }
 
@@ -146,6 +146,48 @@ export function json_parse(text: string): json_type {
 
                 break;
 
+            case JSON_ERROR.EXPECT_BOOLEAN_TRUE:
+
+                throw new Error(`JSON_ERROR.${JSON_ERROR[err]} (err: ${err}) - Expecting a boolean true.`);
+
+                break;
+
+            case JSON_ERROR.EXPECT_BOOLEAN_FALSE:
+
+                throw new Error(`JSON_ERROR.${JSON_ERROR[err]} (err: ${err}) - Expecting a boolean false.`);
+
+                break;
+
+            case JSON_ERROR.EXPECT_NULL:
+
+                throw new Error(`JSON_ERROR.${JSON_ERROR[err]} (err: ${err}) - Expecting a null type.`);
+
+                break;
+
+            case JSON_ERROR.EXPECT_NUMBER_IDENTIFIER:
+
+                throw new Error(`JSON_ERROR.${JSON_ERROR[err]} (err: ${err}) - Expecting a number identifier.`);
+
+                break;
+
+            case JSON_ERROR.EXPECT_DIGIT:
+
+                throw new Error(`JSON_ERROR.${JSON_ERROR[err]} (err: ${err}) - Expecting a numeric digit.`);
+
+                break;
+
+            case JSON_ERROR.EXPECT_INFINITY:
+
+                throw new Error(`JSON_ERROR.${JSON_ERROR[err]} (err: ${err}) - Expecting an Infinity number.`);
+
+                break;
+
+            case JSON_ERROR.EXPECT_NAN:
+
+                throw new Error(`JSON_ERROR.${JSON_ERROR[err]} (err: ${err}) - Expecting a NaN number.`);
+
+                break;
+
             default:
 
                 throw new Error(`Unspecified JSON parsing error.`);
@@ -159,7 +201,7 @@ export function json_parse(text: string): json_type {
     // Parses a json string
     const parse_string = function (): string | undefined {
 
-        skip_white_space();
+        //skip_white_space();
 
         if (has_character('"', true)) {
 
@@ -177,7 +219,7 @@ export function json_parse(text: string): json_type {
                     if (in_list(char, ['"', "\\", "/", "b", "f", "n", "r", "t"])) {
 
                         result += char;
-                        cur++;
+                        //cur++;
 
                     } else if (has_character("u")) {
 
@@ -228,18 +270,58 @@ export function json_parse(text: string): json_type {
     const parse_number = function (): bigint | number | undefined {
 
         // Skip
-        skip_white_space();
+        //skip_white_space();
 
         // Create number holder
         let temp = '';
+
+        // Create forced_bigint
+        let forced_bigint = false;
 
         // Look for negative number
         if (has_character('-', true)) {
 
             temp += '-';
 
+            // Check for list
+            if (!in_list(text[cur], ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'I', 'N'])) throw_error(JSON_ERROR.EXPECT_NUMBER_IDENTIFIER, '');
+            //if (!is_digit(text[cur])) throw_error(JSON_ERROR.EXPECT_DIGIT);
+
+        }
+
+        // Look for a positive number
+        if (has_character('+', true)) {
+
+            temp += '+';
+
             // Check for digit
-            if (!is_digit(text[cur])) throw_error(JSON_ERROR.EXPECT_DIGIT);
+            if (!in_list(text[cur], ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'I', 'N'])) throw_error(JSON_ERROR.EXPECT_NUMBER_IDENTIFIER, '');
+            //if (!is_digit(text[cur])) throw_error(JSON_ERROR.EXPECT_DIGIT);
+
+        }
+
+        // Check for Infinity
+        if (has_character('I', true)) {
+
+            if (!has_character('n', true)) throw_error(JSON_ERROR.EXPECT_INFINITY, 'n');
+            if (!has_character('f', true)) throw_error(JSON_ERROR.EXPECT_INFINITY, 'f');
+            if (!has_character('i', true)) throw_error(JSON_ERROR.EXPECT_INFINITY, 'i');
+            if (!has_character('n', true)) throw_error(JSON_ERROR.EXPECT_INFINITY, 'n');
+            if (!has_character('i', true)) throw_error(JSON_ERROR.EXPECT_INFINITY, 'i');
+            if (!has_character('t', true)) throw_error(JSON_ERROR.EXPECT_INFINITY, 't');
+            if (!has_character('y', true)) throw_error(JSON_ERROR.EXPECT_INFINITY, 'y');
+
+            temp += 'Infinity';
+
+        }
+
+        // Check for NaN
+        if (has_character('N', true)) {
+
+            if (!has_character('a', true)) throw_error(JSON_ERROR.EXPECT_NAN, 'a');
+            if (!has_character('N', true)) throw_error(JSON_ERROR.EXPECT_NAN, 'N');
+
+            temp += 'NaN';
 
         }
 
@@ -304,18 +386,27 @@ export function json_parse(text: string): json_type {
 
         }
 
-        // Check for big int
-        if (has_character('n', true)) {
-
-            temp += 'n';
-
-        }
-
         // Check for temp string
         if (temp === '') return undefined;
 
+        // Check for forced big int set with ending n
+        if (has_character('n', true)) {
+
+            temp += 'n';
+            forced_bigint = true;
+
+        }
+
         // Check if integer or bigint
-        return (is_bigint(temp)) ? BigInt(temp) : Number(temp);
+        if ((is_bigint(temp))) {
+
+            return (forced_bigint) ? BigInt(temp.slice(0, -1)) : BigInt(temp);
+
+        } else {
+
+            return Number(temp);
+
+        }
 
     };
 
@@ -332,6 +423,9 @@ export function json_parse(text: string): json_type {
             while (!end_of_input() && !has_character('}')) {
 
                 if (!first) {
+
+                    // Skip
+                    skip_white_space();
 
                     // Eat comma
                     eat_string(',');
@@ -378,22 +472,118 @@ export function json_parse(text: string): json_type {
 
     };
 
+    // Parses an array
+    const parse_array = function (): json_array | undefined {
+
+        // Look for [ to start
+        if (has_character('[', true)) {
+
+            // Skip
+            skip_white_space();
+
+            const result: json_array = [];
+            let first = true;
+
+            while (!end_of_input() && !has_character(']')) {
+
+                if (!first) {
+
+                    // Skip
+                    skip_white_space();
+
+                    // Eat comma character
+                    eat_string(',');
+
+                    // Skip
+                    skip_white_space();
+
+                }
+
+                // Parse the json type inside the array.
+                const value: json_type = parse_json_type();
+                result.push(value);
+
+                // Turn off first
+                first = false;
+
+            }
+
+            // Missing ending character check
+            if (end_of_input()) throw_error(JSON_ERROR.EXPECT_CHARACTER, ']');
+
+            // Move Cursor
+            cur++;
+
+            return result;
+
+        }
+
+        return undefined;
+
+    };
+
+    // Parses a boolean type
+    const parse_boolean = function (): boolean | undefined {
+
+        //skip_white_space();
+
+        if (has_character('t', true)) {
+
+            if (!has_character('r', true)) throw_error(JSON_ERROR.EXPECT_BOOLEAN_TRUE, 'r');
+            if (!has_character('u', true)) throw_error(JSON_ERROR.EXPECT_BOOLEAN_TRUE, 'u');
+            if (!has_character('e', true)) throw_error(JSON_ERROR.EXPECT_BOOLEAN_TRUE, 'e');
+
+            return true;
+
+        } else if (has_character('f', true)) {
+
+            if (!has_character('a', true)) throw_error(JSON_ERROR.EXPECT_BOOLEAN_FALSE, 'a');
+            if (!has_character('l', true)) throw_error(JSON_ERROR.EXPECT_BOOLEAN_FALSE, 'l');
+            if (!has_character('s', true)) throw_error(JSON_ERROR.EXPECT_BOOLEAN_FALSE, 's');
+            if (!has_character('e', true)) throw_error(JSON_ERROR.EXPECT_BOOLEAN_FALSE, 'e');
+
+            return false;
+
+        }
+
+        return undefined;
+
+    };
+
+    // Parse a null type
+    const parse_null = function (): null | undefined {
+
+        if (has_character('n', true)) {
+
+            if (!has_character('u', true)) throw_error(JSON_ERROR.EXPECT_NULL, 'u');
+            if (!has_character('l', true)) throw_error(JSON_ERROR.EXPECT_NULL, 'l');
+            if (!has_character('l', true)) throw_error(JSON_ERROR.EXPECT_NULL, 'l');
+
+            return null;
+
+        }
+
+        return undefined;
+
+    };
+
+
 
 
     // Parses the json type
     const parse_json_type = function (): json_type {
 
         skip_white_space();
-        const value: json_type = parse_string() ?? parse_number() ?? parse_object();
+        const results: json_type = parse_string() ?? parse_number() ?? parse_object() ?? parse_array() ?? parse_boolean() ?? parse_null();
         skip_white_space();
-        return value;
+        return results;
 
     };
 
     // Start parsing
-    const value = parse_json_type();
+    const results = parse_json_type();
     //this.#expectEndOfInput();
-    return value;
+    return results;
 
 }
 

@@ -13,11 +13,26 @@ const RESET = "\x1b[0m";
 
 Deno.test(`\n${TITLE} Async json_parse() Js Primitive undefined ${RESET}`, async() => {
 
-    //var a = new String("\u{D800}test\"");
-    var a = `{"test":"adam", "hey": 12345, "test2": 1244344234234241342342354534534643654645365 }`;
+    //const schema = await Deno.readTextFile("./tests/schemas/test1.json");
+    const json = await Deno.readTextFile("./tests/json/test2.json");
 
-    console.log(json_parse(a));
-    //console.log(json_parse(JSON.stringify(a)));
+    //const json = `{"message":"\"Update the package list\"","distinct":true,"url":"https://api.github.com/repos"}`
+
+    //var a = new String("\u{D800}test\"");
+    //var a = `{"test":"adam", "hey": 12345, "test2": 1244344234234241342342354534534643654645365 }`;
+
+    //var a = `["test", { "test2": -Infinity, "check": 1234}]`;
+
+//let pjson = JSON.parse(json);
+
+    let pjson = json_parse(json);
+    console.log('Good');
+
+
+    //console.log(JSON.stringify(pjson, null, 4));
+    //console.log(json_parse(json));
+    //console.log(JSON.parse(json));
+
 
 });
 
