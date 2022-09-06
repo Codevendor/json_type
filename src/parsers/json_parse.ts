@@ -12,7 +12,7 @@ export function json_parse(text: string): json_type {
     // Checks if string is a bigint
     const is_bigint = function (src: string): boolean {
 
-        return /^[-+]{0,1}[0-9]+[n]{1}|[-+]{0,1}[1-9]{1}[0-9]{16,}|[-+]{0,1}900719925474099[2-9]$/.test(src);
+        return /^[-+]{0,1}[0-9]+[n]{1}$|^[-+]{0,1}[1-9]{1}[0-9]{16,}$|^[-+]{0,1}900719925474099[2-9]$/.test(src);
 
     }
 
