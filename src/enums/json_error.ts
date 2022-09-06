@@ -1,0 +1,12 @@
+'use strict';
+
+export enum JSON_ERROR {
+
+    EXPECT_CHARACTER = 1,
+    EXPECT_ESCAPE_CHARACTER = 2,
+    EXPECT_ESCAPE_UNICODE = 3,
+    EXPECT_PROPERTY_KEY = 4,
+    EXPECT_DIGIT = 5,
+    EXPECT_EXPONENT_NUMBER = 6
+
+} 
